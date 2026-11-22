@@ -1,6 +1,6 @@
 # SGL Unity CI/CD
 
-Reusable GitHub Actions workflows for Unity Android games by SGL Games.
+Reusable GitHub Actions workflows for Unity Android games by SGL Games. Includes an optional Google Play Internal Testing upload workflow.
 
 > Status: starter template. Not yet validated against a real Unity game.
 
@@ -48,7 +48,8 @@ Never commit secret values. GitHub generally withholds secrets from fork pull re
 
 - The pipeline has not yet been validated against a real Unity project.
 - Android package name must be configured in Unity Player Settings.
-- Google Play deployment, iOS, PlayMode tests and automatic versioning are not yet included.
+- Google Play Internal Testing upload workflow is available as an opt-in, **untested** integration. It is not wired to ordinary pushes. iOS, PlayMode tests and automatic versioning are not yet included.
+- See [Store deployment guide](docs/STORE_DEPLOYMENT.md) for Android setup, security, and iOS prerequisites.
 - Review GitHub Actions usage and Unity licensing requirements.
 - After validation, pin callers to a versioned tag or commit SHA instead of `@main`.
 
@@ -56,7 +57,8 @@ Never commit secret values. GitHub generally withholds secrets from fork pull re
 
 - [ ] Validate first Unity APK build and EditMode tests
 - [ ] Validate signed AAB build
-- [ ] Add Google Play Internal Testing deployment with manual approval
+- [x] Add opt-in Google Play Internal Testing upload workflow (unvalidated)
+- [ ] Validate Play upload against a real game and confirm environment approval
 - [ ] Add PlayMode tests, versioning and versioned releases
 
 ## License
