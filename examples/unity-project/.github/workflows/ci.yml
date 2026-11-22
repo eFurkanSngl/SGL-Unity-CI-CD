@@ -1,0 +1,18 @@
+name: Unity Android CI
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  unity:
+    uses: eFurkanSngl/SGL-Unity-CI-CD/.github/workflows/unity-android.yml@main
+    with:
+      unity_version: '6000.0.40f1' # Change to match ProjectSettings/ProjectVersion.txt
+      project_path: '.'
+      build_name: 'MyGame'
+      run_tests: true
+      build_aab: false
+    secrets: inherit
