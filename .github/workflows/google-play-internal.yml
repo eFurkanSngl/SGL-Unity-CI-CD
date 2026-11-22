@@ -1,0 +1,66 @@
+name: Google Play Internal Testing
+on:
+  workflow_call:
+    inputs:
+      package_name:
+        required: true
+        type: string
+      artifact_name:
+        required: true
+        type: string
+      track:
+        type: string
+        default: internal
+      run_id:
+        required: true
+        type: string
+    secrets:
+      GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64:
+        required: true
+permissions:
+  contents: read
+  actions: read
+jobs:
+  upload:
+    if: inputs.track == 'internal'
+    runs-on: ubuntu-latest
+    environment: google-play-internal
+    steps:
+      - name: Download Android build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ github.token }}
+          path: android-build
+      - name: Find exactly one AAB
+        id: bundle
+        shell: bash
+        run: |
+          mapfile -d '' bundles < <(find android-build -type f -name '*.aab' -print0)
+          if [ "${#bundles[@]}" -ne 1 ]; then
+            echo "Expected exactly one .aab artifact; found ${#bundles[@]}" >&2
+            exit 1
+          fi
+          echo "path=${bundles[0]}" >> "$GITHUB_OUTPUT"
+      - name: Install Fastlane
+        run: gem install fastlane --no-document
+      - name: Upload to Google Play Internal Testing
+        shell: bash
+        env:
+          PLAY_JSON_BASE64: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}
+          PACKAGE_NAME: ${{ inputs.package_name }}
+          AAB_PATH: ${{ steps.bundle.outputs.path }}
+        run: |
+          set -euo pipefail
+          umask 077
+          printf '%s' "$PLAY_JSON_BASE64" | base64 --decode > "$RUNNER_TEMP/play-service-account.json"
+          trap 'rm -f "$RUNNER_TEMP/play-service-account.json"' EXIT
+          fastlane supply \
+            --json_key "$RUNNER_TEMP/play-service-account.json" \
+            --package_name "$PACKAGE_NAME" \
+            --aab "$AAB_PATH" \
+            --track internal \
+            --skip_upload_metadata true \
+            --skip_upload_images true \
+            --skip_upload_screenshots true
