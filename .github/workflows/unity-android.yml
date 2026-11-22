@@ -1,0 +1,92 @@
+name: Reusable Unity Android CI
+on:
+  workflow_call:
+    inputs:
+      unity_version:
+        required: true
+        type: string
+      project_path:
+        type: string
+        default: .
+      build_name:
+        type: string
+        default: Game
+      run_tests:
+        type: boolean
+        default: true
+      build_aab:
+        type: boolean
+        default: false
+    secrets:
+      UNITY_LICENSE:
+        required: false
+      UNITY_EMAIL:
+        required: false
+      UNITY_PASSWORD:
+        required: false
+      ANDROID_KEYSTORE_BASE64:
+        required: false
+      ANDROID_KEYSTORE_PASSWORD:
+        required: false
+      ANDROID_KEYALIAS_NAME:
+        required: false
+      ANDROID_KEYALIAS_PASSWORD:
+        required: false
+permissions:
+  contents: read
+jobs:
+  tests:
+    if: inputs.run_tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - name: Unity EditMode tests
+        uses: game-ci/unity-test-runner@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: ${{ inputs.project_path }}
+          unityVersion: ${{ inputs.unity_version }}
+          testMode: editmode
+          artifactsPath: test-results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: editmode-test-results
+          path: test-results
+          if-no-files-found: ignore
+  android:
+    needs: tests
+    if: always() && (needs.tests.result == 'success' || needs.tests.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - name: Build Android
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: ${{ inputs.project_path }}
+          unityVersion: ${{ inputs.unity_version }}
+          targetPlatform: Android
+          buildName: ${{ inputs.build_name }}
+          androidAppBundle: ${{ inputs.build_aab }}
+          androidKeystoreName: ${{ inputs.build_aab && 'sgl-upload.keystore' || '' }}
+          androidKeystoreBase64: ${{ inputs.build_aab && secrets.ANDROID_KEYSTORE_BASE64 || '' }}
+          androidKeystorePass: ${{ inputs.build_aab && secrets.ANDROID_KEYSTORE_PASSWORD || '' }}
+          androidKeyaliasName: ${{ inputs.build_aab && secrets.ANDROID_KEYALIAS_NAME || '' }}
+          androidKeyaliasPass: ${{ inputs.build_aab && secrets.ANDROID_KEYALIAS_PASSWORD || '' }}
+      - name: Upload Android build
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-${{ inputs.build_name }}
+          path: build/Android
+          if-no-files-found: error
