@@ -1,0 +1,19 @@
+# Unity-generated files
+Library/
+Temp/
+Obj/
+Build/
+Builds/
+Logs/
+UserSettings/
+# Credentials and signing
+*.keystore
+*.jks
+*.p12
+*.p8
+*.mobileprovision
+*.env
+.env.*
+!*.env.example
+*service-account*.json
+*.ulf
